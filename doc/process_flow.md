@@ -1,0 +1,1 @@
+Create a data model python file that will provide an overview of the raw data structure in dictionary format
