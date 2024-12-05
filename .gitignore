@@ -1,1 +1,5 @@
-src/raw/mimic-iv-demo-data-in-the-omop-common-data-model-0.9/
+**/__pycache__/
+src/raw/*
+data/raw/physionet.org
+data/processed/physionet.org
+src/raw/!README.md
