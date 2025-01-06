@@ -6,7 +6,16 @@ import os
 
 # User Information
 local_user = os.getenv('USER')
-physionet_user = 'dleadman4716'
+
+# PostgreSQL Information
+postgre_db_config = {
+        'dbname': 'mimic_omop_etl',
+        'user': local_user,
+        'password': local_user,
+        'host': 'localhost',
+        'port': 5432
+    }
+postgre_port_protocol = 'tcp'
 
 # Pathing Information
 root = f'{os.getcwd()}/'
@@ -21,3 +30,6 @@ output_structure_output = f'{processed_data}output_structure.json'
 input_table_pairs_output = f'{processed_data}input_table_pairs.json'
 output_table_pairs_output = f'{processed_data}output_table_pairs.json'
 config_dynamic = f'{root}config_dynamic.ini'
+vocab_dir = f'{root}data/vocab/'
+sql_scripts = f'{root}sql/'
+sql_db_path = f'{sql_scripts}mimic_omop_etl.db'

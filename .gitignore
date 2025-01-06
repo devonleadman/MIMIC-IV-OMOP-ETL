@@ -3,3 +3,4 @@ src/raw/*
 data/raw/physionet.org
 data/processed/physionet.org
 src/raw/!README.md
+data/vocab/

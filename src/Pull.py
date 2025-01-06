@@ -171,6 +171,7 @@ class Pull:
 
 
     def manually_define_output_data_model(self):
+        # For if you are converting to a different model that is not OMOP
         print("[ERROR] NOT BUILT YET - manually_define_output_data_model()")
         exit()
 

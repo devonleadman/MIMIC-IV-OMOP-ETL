@@ -1,0 +1,85 @@
+{
+    "comment": "draft configuration with design derived from CDMKit",
+
+    "variables": 
+    {
+        "@source_project":   "physionet-data",
+        "@core_dataset":     "mimiciv_hosp",
+        "@hosp_dataset":     "mimiciv_hosp",
+        "@icu_dataset":      "mimiciv_icu",
+
+        "@voc_project": "odysseus-mimic-dev",
+        "@voc_dataset": "vocab_schema",
+
+        "@wf_project": "odysseus-mimic-dev",
+        "@wf_dataset": "waveform_source_poc",
+
+        "@etl_project": "odysseus-mimic-dev",
+        "@etl_dataset": "mimiciv_full_cdm_*",
+
+        "@metrics_project": "odysseus-mimic-dev",
+        "@metrics_dataset": "mimiciv_full_metrics_*",
+
+        "@atlas_project": "odysseus-mimic-dev",
+        "@atlas_dataset": "mimiciv_full_current_cdm_*",
+
+        "@waveforms_csv_path":  "gs://bucket..."
+
+    },
+
+    "workflows":
+    [
+        {
+            "workflow": "ddl",
+            "comment": "use the same dataset templates as in etl section",
+            "type": "sql",
+            "conf": "workflow_ddl.conf"
+        },
+
+        {
+            "workflow": "staging",
+            "comment": "from the raw source tables to src_*, and from voc dataset to work dataset",
+            "type": "sql",
+            "conf": "workflow_staging.conf"
+        },
+
+        {
+            "workflow": "etl",
+            "type": "sql",
+            "conf": "workflow_etl.conf"
+        },
+
+        {
+            "workflow": "vocabulary_refresh",
+            "type": "py",
+            "conf": "workflow_vocabulary_refresh.conf"
+        },
+
+        {
+            "workflow": "ut", 
+            "type": "sql",
+            "conf": "workflow_ut.conf"
+        },
+
+        {
+            "workflow": "qa",
+            "type": "sql",
+            "conf": "workflow_qa.conf"
+        },
+
+        {
+            "workflow": "metrics",
+            "comment": "build metrics with metrics_gen scripts",
+            "type": "sql",
+            "conf": "workflow_metrics.conf"
+        },
+        {
+            "workflow": "gen_scripts",
+            "comment": "automation to generate similar queries for some tasks",
+            "type": "py",
+            "conf": "workflow_gen_scripts.conf"
+        }
+
+
+    ]
+}
