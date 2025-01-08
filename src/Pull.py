@@ -8,7 +8,6 @@ import json
 class Pull:
     def __init__(self):
         self.raw = config_static.raw_data
-        self.physionet_user = config_static.physionet_user
         self.input_dir = config_static.input_dir
         self.input_structure_output = config_static.input_structure_output
         self.input_table_pairs_output = config_static.input_table_pairs_output

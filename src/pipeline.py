@@ -1,15 +1,11 @@
 from src.Pull import *
 from src.Config import *
-from src.Table import *
-from src.DB import *
-from src.SQLiteWrapper import *
+from src.WorkflowRunner import *
 from src.vocabulary_refresh import start_vocabulary_refresh
 import subprocess
-import sys
 
 pull_module = Pull()
 config = Config()
-table_gen = Table()
 
 def setup_postgre_all():
     def run_command(command, check=True):
@@ -72,9 +68,16 @@ def start ():
         start()
     
     else:
-        setup_postgre_all()
-        start_vocabulary_refresh()
-        
+        setup_postgre_all() # works
+        #start_vocabulary_refresh() # works
+        workflow_runner = WorkflowRunner()
+
+        workflow_runner.run_workflow(workflow='ddl') # works
+        workflow_runner.run_workflow(workflow='staging')
+        workflow_runner.run_workflow(workflow='etl')
+        workflow_runner.run_workflow(workflow='ut')
+        workflow_runner.run_workflow(workflow='metrics')
+        workflow_runner.run_workflow(workflow='unload')
         
 
         print('[FINISHED] FULL CONVERSION PIPELINE COMPLETE')

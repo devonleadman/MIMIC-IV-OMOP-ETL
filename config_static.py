@@ -32,4 +32,10 @@ output_table_pairs_output = f'{processed_data}output_table_pairs.json'
 config_dynamic = f'{root}config_dynamic.ini'
 vocab_dir = f'{root}data/vocab/'
 sql_scripts = f'{root}sql/'
+sql_etl_scripts = f'{sql_scripts}etl/'
+etl_conf_path = f'{root}conf/'
+full_etl_conf = f'{etl_conf_path}full.etlconf'
 sql_db_path = f'{sql_scripts}mimic_omop_etl.db'
+
+# ETL Information
+workflows = ['ddl','staging','etl','ut','metrics','unload']
