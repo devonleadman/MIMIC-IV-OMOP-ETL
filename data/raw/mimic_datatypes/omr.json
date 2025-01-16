@@ -1,0 +1,7 @@
+{
+    "subject_id": "INTEGER",
+    "chartdate": "TEXT",
+    "seq_num": "INTEGER",
+    "result_name": "TEXT",
+    "result_value": "TEXT"
+}

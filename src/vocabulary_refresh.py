@@ -86,16 +86,14 @@ def start_vocabulary_refresh():
     csv_files = get_csv_files_recursive(config_static.vocab_dir)
     print(f"Found {len(csv_files)} CSV file(s):")
 
-    '''
     for csv_file in csv_files:
         table_name = os.path.splitext(os.path.basename(csv_file))[0].lower()  # Use the file name (without extension) as the table name
         query = generate_create_table_query(csv_file, table_name)
         db.execute_query(f'DROP TABLE IF EXISTS {table_name};')
         db.execute_query(query)
         populate_table_from_csv(db, csv_file, table_name)
-    '''
         
-    #db.execute_script(f'{config_static.sql_scripts}vocabulary_check_bq.sql')
+    db.execute_script(f'{config_static.sql_scripts}vocabulary_check_bq.sql')
     db.execute_script(f'{config_static.sql_scripts}vocabulary_cleanup_bq_m.sql')
     
 

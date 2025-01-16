@@ -1,0 +1,10 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "stay_id": "INTEGER",
+    "first_careunit": "TEXT",
+    "last_careunit": "TEXT",
+    "intime": "TEXT",
+    "outtime": "TEXT",
+    "los": "DOUBLE PRECISION"
+}

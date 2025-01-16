@@ -1,0 +1,9 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "drg_type": "TEXT",
+    "drg_code": "INTEGER",
+    "description": "TEXT",
+    "drg_severity": "DOUBLE PRECISION",
+    "drg_mortality": "DOUBLE PRECISION"
+}

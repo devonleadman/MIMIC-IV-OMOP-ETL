@@ -37,81 +37,99 @@
 -- -------------------------------------------------------------------
 
 --HINT DISTRIBUTE_ON_KEY(person_id)
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.cdm_visit_occurrence
-(
-    visit_occurrence_id           INT64     not null ,
-    person_id                     INT64     not null ,
-    visit_concept_id              INT64     not null ,
-    visit_start_date              DATE      not null ,
-    visit_start_datetime          DATETIME           ,
-    visit_end_date                DATE      not null ,
-    visit_end_datetime            DATETIME           ,
-    visit_type_concept_id         INT64     not null ,
-    provider_id                   INT64              ,
-    care_site_id                  INT64              ,
-    visit_source_value            STRING             ,
-    visit_source_concept_id       INT64              ,
-    admitting_source_concept_id   INT64              ,
-    admitting_source_value        STRING             ,
-    discharge_to_concept_id       INT64              ,
-    discharge_to_source_value     STRING             ,
-    preceding_visit_occurrence_id INT64              ,
-    -- 
-    unit_id                       STRING,
-    load_table_id                 STRING,
-    load_row_id                   INT64,
-    trace_id                      STRING
-)
-;
+CREATE TABLE cdm_visit_occurrence (
+    visit_occurrence_id           BIGINT NOT NULL,
+    person_id                     BIGINT NOT NULL,
+    visit_concept_id              BIGINT NOT NULL,
+    visit_start_date              DATE NOT NULL,
+    visit_start_datetime          TIMESTAMP,
+    visit_end_date                DATE NOT NULL,
+    visit_end_datetime            TIMESTAMP,
+    visit_type_concept_id         BIGINT NOT NULL,
+    provider_id                   BIGINT,
+    care_site_id                  BIGINT,
+    visit_source_value            TEXT,
+    visit_source_concept_id       BIGINT,
+    admitting_source_concept_id   BIGINT,
+    admitting_source_value        TEXT,
+    discharge_to_concept_id       BIGINT,
+    discharge_to_source_value     TEXT,
+    preceding_visit_occurrence_id BIGINT,
+    unit_id                       TEXT,
+    load_table_id                 TEXT,
+    load_row_id                   BIGINT,
+    trace_id                      TEXT
+);
 
-INSERT INTO `@etl_project`.@etl_dataset.cdm_visit_occurrence
+INSERT INTO cdm_visit_occurrence (
+    visit_occurrence_id,
+    person_id,
+    visit_concept_id,
+    visit_start_date,
+    visit_start_datetime,
+    visit_end_date,
+    visit_end_datetime,
+    visit_type_concept_id,
+    provider_id,
+    care_site_id,
+    visit_source_value,
+    visit_source_concept_id,
+    admitting_source_concept_id,
+    admitting_source_value,
+    discharge_to_concept_id,
+    discharge_to_source_value,
+    preceding_visit_occurrence_id,
+    unit_id,
+    load_table_id,
+    load_row_id,
+    trace_id
+)
 SELECT
-    src.visit_occurrence_id                 AS visit_occurrence_id,
-    per.person_id                           AS person_id,
-    COALESCE(lat.target_concept_id, 0)      AS visit_concept_id,
-    CAST(src.start_datetime AS DATE)        AS visit_start_date,
-    src.start_datetime                      AS visit_start_datetime,
-    CAST(src.end_datetime AS DATE)          AS visit_end_date,
-    src.end_datetime                        AS visit_end_datetime,
-    32817                                   AS visit_type_concept_id,   -- EHR   Type Concept    Standard                          
-    CAST(NULL AS INT64)                     AS provider_id,
-    cs.care_site_id                         AS care_site_id,
-    src.source_value                        AS visit_source_value, -- it should be an ID for visits
-    COALESCE(lat.source_concept_id, 0)      AS visit_source_concept_id, -- it is where visit_concept_id comes from
-    IF(
-        src.admission_location IS NOT NULL,
-        COALESCE(la.target_concept_id, 0),
-        NULL)                               AS admitting_source_concept_id,
-    src.admission_location                  AS admitting_source_value,
-    IF(
-        src.discharge_location IS NOT NULL,
-        COALESCE(ld.target_concept_id, 0),
-        NULL)                               AS discharge_to_concept_id,
-    src.discharge_location                  AS discharge_to_source_value,
-    LAG(src.visit_occurrence_id) OVER ( 
-        PARTITION BY subject_id, hadm_id 
+    src.visit_occurrence_id,
+    per.person_id,
+    COALESCE(lat.target_concept_id, 0) AS visit_concept_id,
+    src.start_datetime::DATE AS visit_start_date,
+    src.start_datetime AS visit_start_datetime,
+    src.end_datetime::DATE AS visit_end_date,
+    src.end_datetime AS visit_end_datetime,
+    32817 AS visit_type_concept_id, -- EHR Type Concept Standard
+    NULL::BIGINT AS provider_id,
+    cs.care_site_id,
+    src.source_value,
+    COALESCE(lat.source_concept_id, 0) AS visit_source_concept_id,
+    CASE
+        WHEN src.admission_location IS NOT NULL THEN COALESCE(la.target_concept_id, 0)
+        ELSE NULL
+    END AS admitting_source_concept_id,
+    src.admission_location AS admitting_source_value,
+    CASE
+        WHEN src.discharge_location IS NOT NULL THEN COALESCE(ld.target_concept_id, 0)
+        ELSE NULL
+    END AS discharge_to_concept_id,
+    src.discharge_location AS discharge_to_source_value,
+    LAG(src.visit_occurrence_id) OVER (
+        PARTITION BY subject_id, hadm_id
         ORDER BY start_datetime
-    )                                   AS preceding_visit_occurrence_id,
-    --
-    CONCAT('visit.', src.unit_id)   AS unit_id,
-    src.load_table_id               AS load_table_id,
-    src.load_row_id                 AS load_row_id,
-    src.trace_id                    AS trace_id
+    ) AS preceding_visit_occurrence_id,
+    CONCAT('visit.', src.unit_id) AS unit_id,
+    src.load_table_id,
+    src.load_row_id,
+    src.trace_id
 FROM 
-    `@etl_project`.@etl_dataset.lk_visit_clean src
+    lk_visit_clean src
 INNER JOIN
-    `@etl_project`.@etl_dataset.cdm_person per
-        ON CAST(src.subject_id AS STRING) = per.person_source_value
+    cdm_person per
+        ON CAST(src.subject_id AS TEXT) = per.person_source_value
 LEFT JOIN 
-    `@etl_project`.@etl_dataset.lk_visit_concept lat
+    lk_visit_concept lat
         ON lat.source_code = src.admission_type
 LEFT JOIN 
-    `@etl_project`.@etl_dataset.lk_visit_concept la 
+    lk_visit_concept la 
         ON la.source_code = src.admission_location
 LEFT JOIN 
-    `@etl_project`.@etl_dataset.lk_visit_concept ld
+    lk_visit_concept ld
         ON ld.source_code = src.discharge_location
 LEFT JOIN 
-    `@etl_project`.@etl_dataset.cdm_care_site cs
-        ON care_site_name = 'BIDMC' -- Beth Israel hospital for all
-;
+    cdm_care_site cs
+        ON cs.care_site_name = 'BIDMC'; -- Beth Israel hospital for all
+

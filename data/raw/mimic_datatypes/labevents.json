@@ -1,0 +1,18 @@
+{
+    "labevent_id": "INTEGER",
+    "subject_id": "INTEGER",
+    "hadm_id": "DOUBLE PRECISION",
+    "specimen_id": "INTEGER",
+    "itemid": "INTEGER",
+    "order_provider_id": "TEXT",
+    "charttime": "TEXT",
+    "storetime": "TEXT",
+    "value": "TEXT",
+    "valuenum": "DOUBLE PRECISION",
+    "valueuom": "TEXT",
+    "ref_range_lower": "DOUBLE PRECISION",
+    "ref_range_upper": "DOUBLE PRECISION",
+    "flag": "DOUBLE PRECISION",
+    "priority": "TEXT",
+    "comments": "TEXT"
+}

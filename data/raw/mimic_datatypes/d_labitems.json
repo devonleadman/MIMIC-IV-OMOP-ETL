@@ -1,0 +1,6 @@
+{
+    "itemid": "INTEGER",
+    "label": "TEXT",
+    "fluid": "TEXT",
+    "category": "TEXT"
+}

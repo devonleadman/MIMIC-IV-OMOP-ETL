@@ -20,28 +20,29 @@
 -- src_patients
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_patients AS
+DROP TABLE IF EXISTS src_patients;
+CREATE TABLE src_patients AS
 SELECT 
     subject_id                          AS subject_id,
     anchor_year                         AS anchor_year,
     anchor_age                          AS anchor_age,
     anchor_year_group                   AS anchor_year_group,
     gender                              AS gender,
-    --
-    'patients'                          AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id
-    ))                                  AS trace_id
+    -- Static value
+    'patients'::text                    AS load_table_id,
+    md5(random()::text || clock_timestamp()::text)::TEXT AS load_row_id, -- Generate a random UUID-like value
+    json_build_object(
+        'subject_id', subject_id
+    )                                  AS trace_id
 FROM
-    `@source_project`.@core_dataset.patients
-;
+    patients;
 
 -- -------------------------------------------------------------------
 -- src_admissions
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_admissions AS
+DROP TABLE IF EXISTS src_admissions;
+CREATE TABLE src_admissions AS
 SELECT
     hadm_id                             AS hadm_id, -- PK
     subject_id                          AS subject_id,
@@ -56,24 +57,22 @@ SELECT
     insurance                           AS insurance,
     marital_status                      AS marital_status,
     language                            AS language,
-    -- edouttime
-    -- hospital_expire_flag
-    --
-    'admissions'                        AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id
-    ))                                  AS trace_id
+    -- Static value
+    'admissions'::TEXT                        AS load_table_id,
+    md5(random()::text || clock_timestamp()::text)::TEXT AS load_row_id, -- Generate a random UUID-like value
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id
+    )                                  AS trace_id
 FROM
-    `@source_project`.@core_dataset.admissions
-;
+    admissions;
 
 -- -------------------------------------------------------------------
 -- src_transfers
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_transfers AS
+DROP TABLE IF EXISTS src_transfers;
+CREATE TABLE src_transfers AS
 SELECT
     transfer_id                         AS transfer_id,
     hadm_id                             AS hadm_id,
@@ -82,15 +81,14 @@ SELECT
     intime                              AS intime,
     outtime                             AS outtime,
     eventtype                           AS eventtype,
-    --
-    'transfers'                         AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        transfer_id AS transfer_id
-    ))                                  AS trace_id
+    -- Static value
+    'transfers'::TEXT                         AS load_table_id,
+    md5(random()::text || clock_timestamp()::text)::TEXT AS load_row_id, -- Generate a random UUID-like value
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'transfer_id', transfer_id
+    )                                  AS trace_id
 FROM
-    `@source_project`.@core_dataset.transfers
-;
+    transfers;
 

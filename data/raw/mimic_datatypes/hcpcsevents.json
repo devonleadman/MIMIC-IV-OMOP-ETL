@@ -1,0 +1,8 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "chartdate": "TEXT",
+    "hcpcs_cd": "TEXT",
+    "seq_num": "INTEGER",
+    "short_description": "TEXT"
+}

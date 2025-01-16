@@ -1,0 +1,8 @@
+{
+    "subject_id": "INTEGER",
+    "gender": "TEXT",
+    "anchor_age": "INTEGER",
+    "anchor_year": "INTEGER",
+    "anchor_year_group": "TEXT",
+    "dod": "TEXT"
+}

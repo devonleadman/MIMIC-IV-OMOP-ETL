@@ -1,0 +1,18 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "admittime": "DATE",
+    "dischtime": "DATE",
+    "deathtime": "DATE",
+    "admission_type": "TEXT",
+    "admit_provider_id": "TEXT",
+    "admission_location": "TEXT",
+    "discharge_location": "TEXT",
+    "insurance": "TEXT",
+    "language": "TEXT",
+    "marital_status": "TEXT",
+    "race": "TEXT",
+    "edregtime": "DATE",
+    "edouttime": "DATE",
+    "hospital_expire_flag": "INTEGER"
+}

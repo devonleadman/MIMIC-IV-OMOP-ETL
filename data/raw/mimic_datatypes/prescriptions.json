@@ -1,0 +1,23 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "pharmacy_id": "INTEGER",
+    "poe_id": "TEXT",
+    "poe_seq": "INTEGER",
+    "order_provider_id": "TEXT",
+    "starttime": "TEXT",
+    "stoptime": "TEXT",
+    "drug_type": "TEXT",
+    "drug": "TEXT",
+    "formulary_drug_cd": "TEXT",
+    "gsn": "DOUBLE PRECISION",
+    "ndc": "DOUBLE PRECISION",
+    "prod_strength": "TEXT",
+    "form_rx": "DOUBLE PRECISION",
+    "dose_val_rx": "INTEGER",
+    "dose_unit_rx": "TEXT",
+    "form_val_disp": "DOUBLE PRECISION",
+    "form_unit_disp": "TEXT",
+    "doses_per_24_hrs": "INTEGER",
+    "route": "TEXT"
+}

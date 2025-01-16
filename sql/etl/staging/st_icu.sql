@@ -18,7 +18,12 @@
 -- src_procedureevents
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_procedureevents AS
+-- -------------------------------------------------------------------
+-- src_procedureevents
+-- -------------------------------------------------------------------
+
+DROP TABLE IF EXISTS src_procedureevents;
+CREATE TABLE src_procedureevents AS
 SELECT
     hadm_id                             AS hadm_id,
     subject_id                          AS subject_id,
@@ -26,50 +31,44 @@ SELECT
     itemid                              AS itemid,
     starttime                           AS starttime,
     value                               AS value,
-    CAST(0 AS INT64)                    AS cancelreason, -- MIMIC IV 2.0 change, the field is removed
-    --
+    0                                   AS cancelreason, -- Placeholder for removed field
+    -- Static value
     'procedureevents'                   AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        starttime AS starttime
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id, -- Generate a UUID-like value
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'starttime', starttime
+    )                                  AS trace_id
 FROM
-    `@source_project`.@icu_dataset.procedureevents
-;
+    procedureevents;
 
 -- -------------------------------------------------------------------
 -- src_d_items
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_d_items AS
+DROP TABLE IF EXISTS src_d_items;
+CREATE TABLE src_d_items AS
 SELECT
     itemid                              AS itemid,
     label                               AS label,
     linksto                             AS linksto,
-    -- abbreviation 
-    -- category
-    -- unitname
-    -- param_type
-    -- lownormalvalue
-    -- highnormalvalue
-    --
+    -- Static value
     'd_items'                           AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        itemid AS itemid,
-        linksto AS linksto
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id, -- Generate a UUID-like value
+    json_build_object(
+        'itemid', itemid,
+        'linksto', linksto
+    )                                  AS trace_id
 FROM
-    `@source_project`.@icu_dataset.d_items
-;
+    d_items;
 
 -- -------------------------------------------------------------------
 -- src_datetimeevents
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_datetimeevents AS
+DROP TABLE IF EXISTS src_datetimeevents;
+CREATE TABLE src_datetimeevents AS
 SELECT
     subject_id  AS subject_id,
     hadm_id     AS hadm_id,
@@ -77,21 +76,24 @@ SELECT
     itemid      AS itemid,
     charttime   AS charttime,
     value       AS value,
-    --
+    -- Static value
     'datetimeevents'                    AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        stay_id AS stay_id,
-        charttime AS charttime
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id, -- Generate a UUID-like value
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'stay_id', stay_id,
+        'charttime', charttime
+    )                                  AS trace_id
 FROM
-    `@source_project`.@icu_dataset.datetimeevents
-;
+    datetimeevents;
 
+-- -------------------------------------------------------------------
+-- src_chartevents
+-- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_chartevents AS
+DROP TABLE IF EXISTS src_chartevents;
+CREATE TABLE src_chartevents AS
 SELECT
     subject_id  AS subject_id,
     hadm_id     AS hadm_id,
@@ -101,15 +103,15 @@ SELECT
     value       AS value,
     valuenum    AS valuenum,
     valueuom    AS valueuom,
-    --
+    -- Static value
     'chartevents'                       AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        stay_id AS stay_id,
-        charttime AS charttime
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id, -- Generate a UUID-like value
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'stay_id', stay_id,
+        'charttime', charttime
+    )                                  AS trace_id
 FROM
-    `@source_project`.@icu_dataset.chartevents
-;
+    chartevents;
+

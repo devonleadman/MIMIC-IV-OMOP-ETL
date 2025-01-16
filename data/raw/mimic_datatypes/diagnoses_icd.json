@@ -1,0 +1,7 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "seq_num": "INTEGER",
+    "icd_code": "INTEGER",
+    "icd_version": "INTEGER"
+}

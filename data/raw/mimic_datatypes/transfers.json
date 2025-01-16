@@ -1,0 +1,9 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "transfer_id": "INTEGER",
+    "eventtype": "TEXT",
+    "careunit": "TEXT",
+    "intime": "TEXT",
+    "outtime": "TEXT"
+}

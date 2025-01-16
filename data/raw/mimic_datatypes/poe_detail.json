@@ -1,0 +1,7 @@
+{
+    "poe_id": "TEXT",
+    "poe_seq": "INTEGER",
+    "subject_id": "INTEGER",
+    "field_name": "TEXT",
+    "field_value": "TEXT"
+}

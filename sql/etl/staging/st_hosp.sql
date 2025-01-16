@@ -23,56 +23,57 @@
 -- src_diagnoses_icd
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_diagnoses_icd AS
+-- -------------------------------------------------------------------
+-- src_diagnoses_icd
+-- -------------------------------------------------------------------
+
+DROP TABLE IF EXISTS src_diagnoses_icd;
+CREATE TABLE src_diagnoses_icd AS
 SELECT
     subject_id      AS subject_id,
     hadm_id         AS hadm_id,
     seq_num         AS seq_num,
     icd_code        AS icd_code,
     icd_version     AS icd_version,
-    --
+    -- Static value
     'diagnoses_icd'                     AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        hadm_id AS hadm_id,
-        seq_num AS seq_num
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id, -- Generate a UUID-like value
+    json_build_object(
+        'hadm_id', hadm_id,
+        'seq_num', seq_num
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.diagnoses_icd
-;
-
--- -------------------------------------------------------------------
--- for Measurement
--- -------------------------------------------------------------------
+    diagnoses_icd;
 
 -- -------------------------------------------------------------------
 -- src_services
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_services AS
+DROP TABLE IF EXISTS src_services;
+CREATE TABLE src_services AS
 SELECT
     subject_id                          AS subject_id,
     hadm_id                             AS hadm_id,
     transfertime                        AS transfertime,
     prev_service                        AS prev_service,
     curr_service                        AS curr_service,
-    --
+    -- Static value
     'services'                          AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        transfertime AS transfertime
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'transfertime', transfertime
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.services
-;
+    services;
 
 -- -------------------------------------------------------------------
 -- src_labevents
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_labevents AS
+DROP TABLE IF EXISTS src_labevents;
+CREATE TABLE src_labevents AS
 SELECT
     labevent_id                         AS labevent_id,
     subject_id                          AS subject_id,
@@ -84,117 +85,111 @@ SELECT
     flag                                AS flag,
     ref_range_lower                     AS ref_range_lower,
     ref_range_upper                     AS ref_range_upper,
-    --
+    -- Static value
     'labevents'                         AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        labevent_id AS labevent_id
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'labevent_id', labevent_id
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.labevents
-;
+    labevents;
 
 -- -------------------------------------------------------------------
 -- src_d_labitems
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_d_labitems AS
+DROP TABLE IF EXISTS src_d_labitems;
+CREATE TABLE src_d_labitems AS
 SELECT
     itemid                              AS itemid,
     label                               AS label,
     fluid                               AS fluid,
     category                            AS category,
-    CAST(NULL AS STRING)                AS loinc_code, -- MIMIC IV 2.0 change, the field is removed
-    --
+    NULL                                AS loinc_code, -- Placeholder for missing field
+    -- Static value
     'd_labitems'                        AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        itemid AS itemid
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'itemid', itemid
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.d_labitems
-;
-
-
--- -------------------------------------------------------------------
--- for Procedure
--- -------------------------------------------------------------------
+    d_labitems;
 
 -- -------------------------------------------------------------------
 -- src_procedures_icd
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_procedures_icd AS
+DROP TABLE IF EXISTS src_procedures_icd;
+CREATE TABLE src_procedures_icd AS
 SELECT
     subject_id                          AS subject_id,
     hadm_id                             AS hadm_id,
-    icd_code        AS icd_code,
-    icd_version     AS icd_version,
-    --
+    icd_code                            AS icd_code,
+    icd_version                         AS icd_version,
+    -- Static value
     'procedures_icd'                    AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        icd_code AS icd_code,
-        icd_version AS icd_version
-    ))                                  AS trace_id -- this set of fields is not unique. To set quantity?
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'icd_code', icd_code,
+        'icd_version', icd_version
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.procedures_icd
-;
+    procedures_icd;
 
 -- -------------------------------------------------------------------
 -- src_hcpcsevents
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_hcpcsevents AS
+DROP TABLE IF EXISTS src_hcpcsevents;
+CREATE TABLE src_hcpcsevents AS
 SELECT
     hadm_id                             AS hadm_id,
     subject_id                          AS subject_id,
     hcpcs_cd                            AS hcpcs_cd,
     seq_num                             AS seq_num,
     short_description                   AS short_description,
-    --
+    -- Static value
     'hcpcsevents'                       AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        hcpcs_cd AS hcpcs_cd,
-        seq_num AS seq_num
-    ))                                  AS trace_id -- this set of fields is not unique. To set quantity?
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'hcpcs_cd', hcpcs_cd,
+        'seq_num', seq_num
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.hcpcsevents
-;
-
+    hcpcsevents;
 
 -- -------------------------------------------------------------------
 -- src_drgcodes
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_drgcodes AS
+DROP TABLE IF EXISTS src_drgcodes;
+CREATE TABLE src_drgcodes AS
 SELECT
     hadm_id                             AS hadm_id,
     subject_id                          AS subject_id,
     drg_code                            AS drg_code,
     description                         AS description,
-    --
-    'drgcodes'                       AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        COALESCE(drg_code, '') AS drg_code
-    ))                                  AS trace_id -- this set of fields is not unique.
+    -- Static value
+    'drgcodes'                          AS load_table_id,
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'drg_code', COALESCE(drg_code, NULL)
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.drgcodes
-;
+    drgcodes;
 
 -- -------------------------------------------------------------------
 -- src_prescriptions
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_prescriptions AS
+DROP TABLE IF EXISTS src_prescriptions;
+CREATE TABLE src_prescriptions AS
 SELECT
     hadm_id                             AS hadm_id,
     subject_id                          AS subject_id,
@@ -213,170 +208,68 @@ SELECT
     form_unit_disp                      AS form_unit_disp,
     doses_per_24_hrs                    AS doses_per_24_hrs,
     route                               AS route,
-    --
+    -- Static value
     'prescriptions'                     AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        pharmacy_id AS pharmacy_id,
-        starttime AS starttime
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'pharmacy_id', pharmacy_id,
+        'starttime', starttime
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.prescriptions
-;
-
+    prescriptions;
 
 -- -------------------------------------------------------------------
 -- src_microbiologyevents
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_microbiologyevents AS
+DROP TABLE IF EXISTS src_microbiologyevents;
+CREATE TABLE src_microbiologyevents AS
 SELECT
-    microevent_id               AS microevent_id,
-    subject_id                  AS subject_id,
-    hadm_id                     AS hadm_id,
-    chartdate                   AS chartdate,
-    charttime                   AS charttime, -- usage: COALESCE(charttime, chartdate)
-    spec_itemid                 AS spec_itemid, -- d_micro, type of specimen taken. If no grouth, then all other fields is null
-    spec_type_desc              AS spec_type_desc, -- for reference
-    test_itemid                 AS test_itemid, -- d_micro, what test is taken, goes to measurement
-    test_name                   AS test_name, -- for reference
-    org_itemid                  AS org_itemid, -- d_micro, what bacteria have grown
-    org_name                    AS org_name, -- for reference
-    ab_itemid                   AS ab_itemid, -- d_micro, antibiotic tested on the bacteria
-    ab_name                     AS ab_name, -- for reference
-    dilution_comparison         AS dilution_comparison, -- operator sign
-    dilution_value              AS dilution_value, -- numeric value
-    interpretation              AS interpretation, -- bacteria's degree of resistance to the antibiotic
-    --
+    microevent_id                       AS microevent_id,
+    subject_id                          AS subject_id,
+    hadm_id                             AS hadm_id,
+    chartdate                           AS chartdate,
+    charttime                           AS charttime,
+    spec_itemid                         AS spec_itemid,
+    spec_type_desc                      AS spec_type_desc,
+    test_itemid                         AS test_itemid,
+    test_name                           AS test_name,
+    org_itemid                          AS org_itemid,
+    org_name                            AS org_name,
+    ab_itemid                           AS ab_itemid,
+    ab_name                             AS ab_name,
+    dilution_comparison                 AS dilution_comparison,
+    dilution_value                      AS dilution_value,
+    interpretation                      AS interpretation,
+    -- Static value
     'microbiologyevents'                AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subject_id AS subject_id,
-        hadm_id AS hadm_id,
-        microevent_id AS microevent_id
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'subject_id', subject_id,
+        'hadm_id', hadm_id,
+        'microevent_id', microevent_id
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.microbiologyevents
-;
-
--- -------------------------------------------------------------------
--- src_d_micro
--- raw d_micro is no longer available both in mimic_hosp and mimiciv_hosp
--- -------------------------------------------------------------------
-
--- CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_d_micro AS
--- SELECT
---     itemid                      AS itemid, -- numeric ID
---     label                       AS label, -- source_code for custom mapping
---     category                    AS category, 
---     --
---     'd_micro'                   AS load_table_id,
---     FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
---     TO_JSON_STRING(STRUCT(
---         itemid AS itemid
---     ))                                  AS trace_id
--- FROM
---     `@source_project`.@hosp_dataset.d_micro
--- ;
-
--- -------------------------------------------------------------------
--- src_d_micro
--- MIMIC IV 2.0: generate src_d_micro from microbiologyevents
--- -------------------------------------------------------------------
-
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_d_micro AS
-WITH d_micro AS (
-
-    SELECT DISTINCT
-        ab_itemid                   AS itemid, -- numeric ID
-        ab_name                     AS label, -- source_code for custom mapping
-        'ANTIBIOTIC'                AS category, 
-        --
-        TO_JSON_STRING(STRUCT(
-            'ab_itemid' AS field_name,
-            ab_itemid AS itemid
-        ))                                  AS trace_id
-    FROM
-        `@source_project`.@hosp_dataset.microbiologyevents
-    WHERE
-        ab_itemid IS NOT NULL
-    UNION ALL
-    SELECT DISTINCT
-        test_itemid                 AS itemid, -- numeric ID
-        test_name                   AS label, -- source_code for custom mapping
-        'MICROTEST'                 AS category, 
-        --
-        TO_JSON_STRING(STRUCT(
-            'test_itemid' AS field_name,
-            test_itemid AS itemid
-        ))                                  AS trace_id
-    FROM
-        `@source_project`.@hosp_dataset.microbiologyevents
-    WHERE
-        test_itemid IS NOT NULL
-    UNION ALL
-    SELECT DISTINCT
-        org_itemid                  AS itemid, -- numeric ID
-        org_name                    AS label, -- source_code for custom mapping
-        'ORGANISM'                  AS category, 
-        --
-        TO_JSON_STRING(STRUCT(
-            'org_itemid' AS field_name,
-            org_itemid AS itemid
-        ))                                  AS trace_id
-    FROM
-        `@source_project`.@hosp_dataset.microbiologyevents
-    WHERE
-        org_itemid IS NOT NULL
-    UNION ALL
-    SELECT DISTINCT
-        spec_itemid                 AS itemid, -- numeric ID
-        spec_type_desc              AS label, -- source_code for custom mapping
-        'SPECIMEN'                  AS category, 
-        --
-        TO_JSON_STRING(STRUCT(
-            'spec_itemid' AS field_name,
-            spec_itemid AS itemid
-        ))                                  AS trace_id
-    FROM
-        `@source_project`.@hosp_dataset.microbiologyevents
-    WHERE
-        spec_itemid IS NOT NULL
-)
-SELECT
-    itemid                      AS itemid, -- numeric ID
-    label                       AS label, -- source_code for custom mapping
-    category                    AS category, 
-    --
-    'microbiologyevents'                AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    trace_id                            AS trace_id
-FROM
-    d_micro
-;
+    microbiologyevents;
 
 -- -------------------------------------------------------------------
 -- src_pharmacy
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_pharmacy AS
+DROP TABLE IF EXISTS src_pharmacy;
+CREATE TABLE src_pharmacy AS
 SELECT
     pharmacy_id                         AS pharmacy_id,
     medication                          AS medication,
-    -- hadm_id                             AS hadm_id,
-    -- subject_id                          AS subject_id,
-    -- starttime                           AS starttime,
-    -- stoptime                            AS stoptime,
-    -- route                               AS route,
-    --
+    -- Static value
     'pharmacy'                          AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        pharmacy_id AS pharmacy_id
-    ))                                  AS trace_id
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'pharmacy_id', pharmacy_id
+    )                                  AS trace_id
 FROM
-    `@source_project`.@hosp_dataset.pharmacy
-;
+    pharmacy;
+
 

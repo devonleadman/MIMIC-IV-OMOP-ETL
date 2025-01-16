@@ -1,0 +1,14 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "emar_id": "TEXT",
+    "emar_seq": "INTEGER",
+    "poe_id": "TEXT",
+    "pharmacy_id": "DOUBLE PRECISION",
+    "enter_provider_id": "DOUBLE PRECISION",
+    "charttime": "TEXT",
+    "medication": "TEXT",
+    "event_txt": "TEXT",
+    "scheduletime": "TEXT",
+    "storetime": "TEXT"
+}

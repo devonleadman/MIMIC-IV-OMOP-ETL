@@ -1,0 +1,11 @@
+{
+    "itemid": "INTEGER",
+    "label": "TEXT",
+    "abbreviation": "TEXT",
+    "linksto": "TEXT",
+    "category": "TEXT",
+    "unitname": "TEXT",
+    "param_type": "TEXT",
+    "lownormalvalue": "DOUBLE PRECISION",
+    "highnormalvalue": "DOUBLE PRECISION"
+}

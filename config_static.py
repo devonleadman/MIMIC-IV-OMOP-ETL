@@ -36,6 +36,7 @@ sql_etl_scripts = f'{sql_scripts}etl/'
 etl_conf_path = f'{root}conf/'
 full_etl_conf = f'{etl_conf_path}full.etlconf'
 sql_db_path = f'{sql_scripts}mimic_omop_etl.db'
+mimic_datatypes_dir = f'{raw_data}mimic_datatypes'
 
 # ETL Information
 workflows = ['ddl','staging','etl','ut','metrics','unload']

@@ -42,7 +42,6 @@ class PostgreWrapper:
             if fetch_one:
                 return self.cursor.fetchone()
             self.connection.commit()
-            print("Query executed successfully.")
         except Exception as e:
             self.connection.rollback()
             print(f"Error executing query: {e}")

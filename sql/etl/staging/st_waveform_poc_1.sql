@@ -61,189 +61,160 @@
 -- src_waveform_header
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_waveform_header
-(       
-    reference_id            STRING,
-    raw_files_path          STRING,
-    -- smth to connect to visit_detail -- source_visit_detail ()
-    -- visit_detail will be at the heart of applying waveform
-    -- parsed data, "header"  
-    subject_id              INT64,
-    hadm_id                 INT64,
-    start_datetime          DATETIME,
-    end_datetime            DATETIME,
-    --
-    load_table_id           STRING,
-    load_row_id             INT64,
-    trace_id                STRING
-);
-
 -- -------------------------------------------------------------------
 -- src_waveform_header
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_waveform_dx
-(       
-    reference_id            STRING,  -- FK to the header
-    waveform_id             STRING,  -- row number inside the reference_id
-    -- parsed data, "body": pivoted, unpivoted? -- extract 
-    source_code             STRING,      -- for example:
-
-        -- "GLOBAL T AXIS" -- map these codes according to P100CMapToOMOP and other possible mappings
-                           -- populate measurement_concept_id with the found concepts
-    qualifier       STRING,
-    severity        STRING,
-                                -- ...
-    --
-    load_table_id           STRING,
-    load_row_id             INT64,
-    trace_id                STRING
-);
-
--- parsed codes to be targeted to table cdm_measurement
-
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_waveform_mx
+DROP TABLE IF EXISTS src_waveform_header;
+CREATE TABLE src_waveform_header
 (
-    subject_id              INT64,
-    reference_id            STRING,  -- FK to the header
-    waveform_id             STRING,  -- row number inside the reference_id 
-                                     -- (to concat with reference_id like stay_id)
-    -- parsed data, "body": pivoted, unpivoted? -- extract from xml
-    mx_datetime             DATETIME,
-    source_code             STRING,      -- for example:
-        -- "GLOBAL HEART RATE"
-        -- "GLOBAL P AXIS"
-        -- "GLOBAL PR INT"
-        -- "GLOBAL QRS AXIS"
-        -- "GLOBAL QRS DUR"
-        -- "GLOBAL QT"
-        -- "GLOBAL QTc"
-        -- "GLOBAL T AXIS" -- map these codes according to P100CMapToOMOP and other possible mappings
-                           -- populate measurement_concept_id with the found concepts
-    value_as_number         FLOAT64,
-    unit_source_value       STRING, -- measurement unit "BPM", "MS", "UV" (microvolt) etc.
-                                    -- map these labels and populate unit_concept_id
-    --
-    load_table_id           STRING,
-    load_row_id             INT64,
-    trace_id                STRING
+    reference_id            TEXT,
+    raw_files_path          TEXT,
+    subject_id              INTEGER,
+    hadm_id                 INTEGER,
+    start_datetime          TIMESTAMP,
+    end_datetime            TIMESTAMP,
+    load_table_id           TEXT,
+    load_row_id             INTEGER,
+    trace_id                TEXT
 );
 
+-- -------------------------------------------------------------------
+-- src_waveform_dx
+-- -------------------------------------------------------------------
 
--- parse xml from Manlik? -> src_waveform
--- src_waveform -> visit_detail (visit_detail_source_value = <reference ID>)
+DROP TABLE IF EXISTS src_waveform_dx;
+CREATE TABLE src_waveform_dx
+(
+    reference_id            TEXT,  -- FK to the header
+    waveform_id             TEXT,  -- row number inside the reference_id
+    source_code             TEXT,  -- parsed data
+    qualifier               TEXT,
+    severity                TEXT,
+    load_table_id           TEXT,
+    load_row_id             INTEGER,
+    trace_id                TEXT
+);
 
--- finding the visit 
--- create visit_detail
--- create measurement -> link visit_detail using visit_detail_source_value = meas_source_value 
--- (start with Manlik's proposal)
+-- -------------------------------------------------------------------
+-- src_waveform_mx
+-- -------------------------------------------------------------------
 
+DROP TABLE IF EXISTS src_waveform_mx;
+CREATE TABLE src_waveform_mx
+(
+    subject_id              INTEGER,
+    reference_id            TEXT,  -- FK to the header
+    waveform_id             TEXT,  -- row number inside the reference_id
+    mx_datetime             TIMESTAMP,
+    source_code             TEXT,  -- parsed data
+    value_as_number         DOUBLE PRECISION,
+    unit_source_value       TEXT, -- measurement unit
+    load_table_id           TEXT,
+    load_row_id             INTEGER,
+    trace_id                TEXT
+);
 
--- select random existing subject_id and hadm_id
+-- -------------------------------------------------------------------
+-- src_waveform_subject
+-- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_waveform_subject AS
+DROP TABLE IF EXISTS src_waveform_subject;
+CREATE TABLE src_waveform_subject AS
 SELECT
     subject_id,
     hadm_id
 FROM
-    `@etl_project`.@etl_dataset.src_admissions
-LIMIT 1
-;
+    src_admissions
+LIMIT 1;
 
 -- -------------------------------------------------------------------
--- insert sample data
+-- Insert sample data into src_waveform_header
 -- -------------------------------------------------------------------
 
-
-INSERT INTO `@etl_project`.@etl_dataset.src_waveform_header
+INSERT INTO src_waveform_header
 SELECT
     '3700002_0011.CCSIMxv1' AS reference_id,
     'gs://waveform_storage/3700002/0011.wfdb' AS raw_files_path,
     subj.subject_id AS subject_id,
     subj.hadm_id AS hadm_id,
-    PARSE_DATETIME('%F', '1990-01-01') AS start_datetime,
-    DATETIME_ADD(PARSE_DATETIME('%F', '1990-01-01'), INTERVAL src.row_count + 1 MILLISECOND) AS end_datetime,
-    --
-    '3700002_0011.CCSIMxv1.xml'                                 AS load_table_id,
-    0                                                           AS load_row_id,
-    '{"reference_id":"3700002_0011","algorithm_id":"CCSIMxv1"}' AS trace_id
+    TO_TIMESTAMP('1990-01-01', 'YYYY-MM-DD') AS start_datetime,
+    TO_TIMESTAMP('1990-01-01', 'YYYY-MM-DD') + (src.row_count + 1) * INTERVAL '1 millisecond' AS end_datetime,
+    '3700002_0011.CCSIMxv1.xml' AS load_table_id,
+    0 AS load_row_id,
+    json_build_object('reference_id', '3700002_0011', 'algorithm_id', 'CCSIMxv1')::TEXT AS trace_id
 FROM
 (
     SELECT COUNT(*) AS row_count 
-    FROM `@wf_project`.@wf_dataset.raw_case055_ecg_lines3
+    FROM raw_case055_ecg_lines3
 ) src
 CROSS JOIN
-    `@etl_project`.@etl_dataset.src_waveform_subject subj
-;
+    src_waveform_subject subj;
 
--- line_1
-INSERT INTO `@etl_project`.@etl_dataset.src_waveform_mx
+-- -------------------------------------------------------------------
+-- Insert sample data into src_waveform_mx
+-- -------------------------------------------------------------------
+
+INSERT INTO src_waveform_mx
 -- line_1
 SELECT
     subj.subject_id AS subject_id,
-    '3700002_0011.CCSIMxv1' AS reference_id,  -- FK to the header
-    CONCAT('3700002_0011.CCSIMxv1', '.', CAST(src.row_id AS STRING)) AS waveform_id,  -- row number inside the reference_id
-    DATETIME_ADD(PARSE_DATETIME('%F', '1990-01-01'), INTERVAL src.row_id MILLISECOND) AS mx_datetime,
-    "GLOBAL QT"             AS source_code,      -- for example:
-    src.line_1                  AS value_as_number,
-    'UV' AS unit_source_value, -- measurement unit "BPM", "MS", "UV" (microvolt) etc.
-                                    -- map these labels and populate unit_concept_id
-    --
-    '3700002_0011.CCSIMxv1.xml' load_table_id,
+    '3700002_0011.CCSIMxv1' AS reference_id,
+    CONCAT('3700002_0011.CCSIMxv1', '.', src.row_id::TEXT) AS waveform_id,
+    TO_TIMESTAMP('1990-01-01', 'YYYY-MM-DD') + src.row_id * INTERVAL '1 millisecond' AS mx_datetime,
+    'GLOBAL QT' AS source_code,
+    src.line_1 AS value_as_number,
+    'UV' AS unit_source_value,
+    '3700002_0011.CCSIMxv1.xml' AS load_table_id,
     0 AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-            '3700002_0011' AS reference_id,
-            'CCSIMxv1' AS algorithm_id,
-            src.row_id AS row_id
-        )) AS trace_id -- 
+    json_build_object(
+        'reference_id', '3700002_0011',
+        'algorithm_id', 'CCSIMxv1',
+        'row_id', src.row_id
+    )::TEXT AS trace_id
 FROM
-    `@wf_project`.@wf_dataset.raw_case055_ecg_lines3 src
+    raw_case055_ecg_lines3 src
 CROSS JOIN
-    `@etl_project`.@etl_dataset.src_waveform_subject subj
+    src_waveform_subject subj
 UNION ALL
 -- line_2
 SELECT
     subj.subject_id AS subject_id,
-    '3700002_0011.CCSIMxv1' AS reference_id,  -- FK to the header
-    CONCAT('3700002_0011.CCSIMxv1', '.', CAST(src.row_id AS STRING)) AS waveform_id,  -- row number inside the reference_id
-    DATETIME_ADD(PARSE_DATETIME('%F', '1990-01-01'), INTERVAL src.row_id MILLISECOND) AS mx_datetime,
-    "GLOBAL QRS DUR"             AS source_code,      -- for example:
-    src.line_2                  AS value_as_number,
-    'UV' AS unit_source_value, -- measurement unit "BPM", "MS", "UV" (microvolt) etc.
-                                    -- map these labels and populate unit_concept_id
-    --
-    '3700002_0011.CCSIMxv1.xml' load_table_id,
+    '3700002_0011.CCSIMxv1' AS reference_id,
+    CONCAT('3700002_0011.CCSIMxv1', '.', src.row_id::TEXT) AS waveform_id,
+    TO_TIMESTAMP('1990-01-01', 'YYYY-MM-DD') + src.row_id * INTERVAL '1 millisecond' AS mx_datetime,
+    'GLOBAL QRS DUR' AS source_code,
+    src.line_2 AS value_as_number,
+    'UV' AS unit_source_value,
+    '3700002_0011.CCSIMxv1.xml' AS load_table_id,
     0 AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-            '3700002_0011' AS reference_id,
-            'CCSIMxv1' AS algorithm_id,
-            src.row_id AS row_id
-        )) AS trace_id -- 
+    json_build_object(
+        'reference_id', '3700002_0011',
+        'algorithm_id', 'CCSIMxv1',
+        'row_id', src.row_id
+    )::TEXT AS trace_id
 FROM
-    `@wf_project`.@wf_dataset.raw_case055_ecg_lines3 src
+    raw_case055_ecg_lines3 src
 CROSS JOIN
-    `@etl_project`.@etl_dataset.src_waveform_subject subj
+    src_waveform_subject subj
 UNION ALL
 -- line_3
 SELECT
     subj.subject_id AS subject_id,
-    '3700002_0011.CCSIMxv1' AS reference_id,  -- FK to the header
-    CONCAT('3700002_0011.CCSIMxv1', '.', CAST(src.row_id AS STRING)) AS waveform_id,  -- row number inside the reference_id
-    DATETIME_ADD(PARSE_DATETIME('%F', '1990-01-01'), INTERVAL src.row_id MILLISECOND) AS mx_datetime,
-    "GLOBAL QRS AXIS"             AS source_code,      -- for example:
-    src.line_3                  AS value_as_number,
-    'UV' AS unit_source_value, -- measurement unit "BPM", "MS", "UV" (microvolt) etc.
-                                    -- map these labels and populate unit_concept_id
-    --
-    '3700002_0011.CCSIMxv1.xml' load_table_id,
+    '3700002_0011.CCSIMxv1' AS reference_id,
+    CONCAT('3700002_0011.CCSIMxv1', '.', src.row_id::TEXT) AS waveform_id,
+    TO_TIMESTAMP('1990-01-01', 'YYYY-MM-DD') + src.row_id * INTERVAL '1 millisecond' AS mx_datetime,
+    'GLOBAL QRS AXIS' AS source_code,
+    src.line_3 AS value_as_number,
+    'UV' AS unit_source_value,
+    '3700002_0011.CCSIMxv1.xml' AS load_table_id,
     0 AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-            '3700002_0011' AS reference_id,
-            'CCSIMxv1' AS algorithm_id,
-            src.row_id AS row_id
-        )) AS trace_id -- 
+    json_build_object(
+        'reference_id', '3700002_0011',
+        'algorithm_id', 'CCSIMxv1',
+        'row_id', src.row_id
+    )::TEXT AS trace_id
 FROM
-    `@wf_project`.@wf_dataset.raw_case055_ecg_lines3 src
+    raw_case055_ecg_lines3 src
 CROSS JOIN
-    `@etl_project`.@etl_dataset.src_waveform_subject subj
-;
+    src_waveform_subject subj;

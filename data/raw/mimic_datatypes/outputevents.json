@@ -1,0 +1,11 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "stay_id": "INTEGER",
+    "caregiver_id": "INTEGER",
+    "charttime": "TEXT",
+    "storetime": "TEXT",
+    "itemid": "INTEGER",
+    "value": "INTEGER",
+    "valueuom": "TEXT"
+}

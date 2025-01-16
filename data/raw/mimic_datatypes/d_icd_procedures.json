@@ -1,0 +1,5 @@
+{
+    "icd_code": "INTEGER",
+    "icd_version": "INTEGER",
+    "long_title": "TEXT"
+}

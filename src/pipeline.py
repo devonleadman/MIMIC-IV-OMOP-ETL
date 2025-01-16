@@ -2,6 +2,7 @@ from src.Pull import *
 from src.Config import *
 from src.WorkflowRunner import *
 from src.vocabulary_refresh import start_vocabulary_refresh
+from src.start_mimic_population import start_mimic_population
 import subprocess
 
 pull_module = Pull()
@@ -58,18 +59,17 @@ def setup_postgre_all():
     setup_postgresql()
 
 def start ():
+    # Pulls raw MIMIC data
     if not config.get_config('SYSTEM', 'input_setup_complete') == 'True':
         print('[WARNING] Input setup has not been completed... starting setup now')
         pull_module.input_setup()
-        start()
-    elif not config.get_config('SYSTEM', 'output_setup_complete') == 'True':
-        print('[WARNING] Output setup has not been completed... starting setup now')
-        pull_module.output_setup()
         start()
     
     else:
         setup_postgre_all() # works
         #start_vocabulary_refresh() # works
+        start_mimic_population() # works
+
         workflow_runner = WorkflowRunner()
 
         workflow_runner.run_workflow(workflow='ddl') # works

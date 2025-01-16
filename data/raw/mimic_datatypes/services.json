@@ -1,0 +1,7 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "transfertime": "TEXT",
+    "prev_service": "DOUBLE PRECISION",
+    "curr_service": "TEXT"
+}

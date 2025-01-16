@@ -21,37 +21,38 @@
 -- cdm_location
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.cdm_location
+DROP TABLE IF EXISTS cdm_location;
+CREATE TABLE cdm_location
 (
-    location_id           INT64     not null ,
-    address_1             STRING             ,
-    address_2             STRING             ,
-    city                  STRING             ,
-    state                 STRING             ,
-    zip                   STRING             ,
-    county                STRING             ,
-    location_source_value STRING             ,
-    -- 
-    unit_id                       STRING,
-    load_table_id                 STRING,
-    load_row_id                   INT64,
-    trace_id                      STRING
-)
-;
+    location_id           BIGINT     NOT NULL,
+    address_1             TEXT                ,
+    address_2             TEXT                ,
+    city                  TEXT                ,
+    state                 TEXT                ,
+    zip                   TEXT                ,
+    county                TEXT                ,
+    location_source_value TEXT                ,
+    unit_id               TEXT,
+    load_table_id         TEXT,
+    load_row_id           BIGINT,
+    trace_id              TEXT
+);
 
-INSERT INTO `@etl_project`.@etl_dataset.cdm_location
+-- -------------------------------------------------------------------
+-- Insert data into cdm_location
+-- -------------------------------------------------------------------
+
+INSERT INTO cdm_location
 SELECT
     1                           AS location_id,
-    CAST(NULL AS STRING)        AS address_1,
-    CAST(NULL AS STRING)        AS address_2,
-    CAST(NULL AS STRING)        AS city,
+    NULL                        AS address_1,
+    NULL                        AS address_2,
+    NULL                        AS city,
     'MA'                        AS state,
-    CAST(NULL AS STRING)        AS zip,
-    CAST(NULL AS STRING)        AS county,
+    NULL                        AS zip,
+    NULL                        AS county,
     'Beth Israel Hospital'      AS location_source_value,
-    -- 
     'location.null'             AS unit_id,
     'null'                      AS load_table_id,
     0                           AS load_row_id,
-    CAST(NULL AS STRING)        AS trace_id
-;
+    NULL                        AS trace_id;

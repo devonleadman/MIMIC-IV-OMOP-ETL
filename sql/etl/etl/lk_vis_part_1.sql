@@ -26,35 +26,40 @@
 -- ER admissions to visit_detail too
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.lk_admissions_clean AS
+-- -------------------------------------------------------------------
+-- Create lk_admissions_clean
+-- -------------------------------------------------------------------
+
+DROP TABLE IF EXISTS lk_admissions_clean;
+CREATE TABLE lk_admissions_clean AS
 SELECT
     src.subject_id                                  AS subject_id,
     src.hadm_id                                     AS hadm_id,
-    IF(src.edregtime < src.admittime,
-        src.edregtime, src.admittime
-    )                                               AS start_datetime, -- the earliest of
+    CASE 
+        WHEN src.edregtime < src.admittime THEN src.edregtime
+        ELSE src.admittime
+    END                                             AS start_datetime, -- the earliest of
     src.dischtime                                   AS end_datetime,
     src.admission_type                              AS admission_type, -- current location
     src.admission_location                          AS admission_location, -- to hospital
     src.discharge_location                          AS discharge_location, -- from hospital
-    IF(src.edregtime IS NULL, FALSE, TRUE)          AS is_er_admission, -- create visit_detail if TRUE
-    -- 
-    'admissions'                    AS unit_id,
-    src.load_table_id               AS load_table_id,
-    src.load_row_id                 AS load_row_id,
-    src.trace_id                    AS trace_id
+    CASE 
+        WHEN src.edregtime IS NULL THEN FALSE
+        ELSE TRUE
+    END                                             AS is_er_admission, -- create visit_detail if TRUE
+    'admissions'                                    AS unit_id,
+    src.load_table_id                               AS load_table_id,
+    src.load_row_id                                 AS load_row_id,
+    src.trace_id                                    AS trace_id
 FROM
-    `@etl_project`.@etl_dataset.src_admissions src -- adm
-;
+    src_admissions src;
 
 -- -------------------------------------------------------------------
--- lk_transfers_clean
---
--- Rule 1. 
--- from transfers without discharges to visit_detail
+-- Create lk_transfers_clean
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.lk_transfers_clean AS
+DROP TABLE IF EXISTS lk_transfers_clean;
+CREATE TABLE lk_transfers_clean AS
 SELECT
     src.subject_id                                  AS subject_id,
     COALESCE(src.hadm_id, vis.hadm_id)              AS hadm_id,
@@ -63,41 +68,40 @@ SELECT
     src.intime                                      AS start_datetime,
     src.outtime                                     AS end_datetime,
     src.careunit                                    AS current_location, -- find prev and next for adm and disch location
-    -- 
-    'transfers'                     AS unit_id,
-    src.load_table_id               AS load_table_id,
-    src.load_row_id                 AS load_row_id,
-    src.trace_id                    AS trace_id
+    'transfers'                                     AS unit_id,
+    src.load_table_id                               AS load_table_id,
+    src.load_row_id                                 AS load_row_id,
+    src.trace_id                                    AS trace_id
 FROM 
-    `@etl_project`.@etl_dataset.src_transfers src
+    src_transfers src
 LEFT JOIN
-    `@etl_project`.@etl_dataset.lk_admissions_clean vis -- associate transfers with admissions according to 
+    lk_admissions_clean vis
         ON vis.subject_id = src.subject_id
         AND src.intime BETWEEN vis.start_datetime AND vis.end_datetime
         AND src.hadm_id IS NULL
 WHERE 
-    src.eventtype != 'discharge' -- these are not useful
-;
+    src.eventtype != 'discharge'; -- these are not useful
 
 -- -------------------------------------------------------------------
--- lk_services_clean
---
--- Rule 3.
--- SERVICES information
+-- Create lk_services_duplicated
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.lk_services_duplicated AS
+DROP TABLE IF EXISTS lk_services_duplicated;
+CREATE TABLE lk_services_duplicated AS
 SELECT
     trace_id, COUNT(*) AS row_count
 FROM 
-    `@etl_project`.@etl_dataset.src_services src
+    src_services src
 GROUP BY
     src.trace_id
-HAVING COUNT(*) > 1
-;
+HAVING COUNT(*) > 1;
 
+-- -------------------------------------------------------------------
+-- Create lk_services_clean
+-- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.lk_services_clean AS
+DROP TABLE IF EXISTS lk_services_clean;
+CREATE TABLE lk_services_clean AS
 SELECT
     src.subject_id                                  AS subject_id,
     src.hadm_id                                     AS hadm_id,
@@ -112,17 +116,15 @@ SELECT
         PARTITION BY src.subject_id, src.hadm_id 
         ORDER BY src.transfertime
     )                                               AS lag_service,
-                                -- to double-check that the services sequence is still consistent
-    -- 
-    'services'                      AS unit_id,
-    src.load_table_id               AS load_table_id,
-    src.load_row_id                 AS load_row_id,
-    src.trace_id                    AS trace_id
+    'services'                                      AS unit_id,
+    src.load_table_id                               AS load_table_id,
+    src.load_row_id                                 AS load_row_id,
+    src.trace_id                                    AS trace_id
 FROM 
-    `@etl_project`.@etl_dataset.src_services src
+    src_services src
 LEFT JOIN
-    `@etl_project`.@etl_dataset.lk_services_duplicated sd
+    lk_services_duplicated sd
         ON src.trace_id = sd.trace_id
 WHERE
-    sd.trace_id IS NULL -- remove duplicates with the exact same time of transferring
-;
+    sd.trace_id IS NULL; -- remove duplicates with the exact same time of transferring
+

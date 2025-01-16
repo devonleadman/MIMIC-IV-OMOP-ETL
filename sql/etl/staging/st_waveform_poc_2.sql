@@ -61,105 +61,99 @@
 -- src_waveform_header
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_waveform_header
+-- -------------------------------------------------------------------
+-- Create src_waveform_header table
+-- -------------------------------------------------------------------
+
+DROP TABLE IF EXISTS src_waveform_header;
+CREATE TABLE src_waveform_header
 (       
-    reference_id            STRING,
-    raw_files_path          STRING,
-    case_id                 INT64,
-    subject_id              INT64,
-    start_datetime          DATETIME,
-    end_datetime            DATETIME,
-    --
-    load_table_id           STRING,
-    load_row_id             INT64,
-    trace_id                STRING
+    reference_id            TEXT,
+    raw_files_path          TEXT,
+    case_id                 BIGINT,
+    subject_id              BIGINT,
+    start_datetime          TIMESTAMP,
+    end_datetime            TIMESTAMP,
+    load_table_id           TEXT,
+    load_row_id             BIGINT,
+    trace_id                TEXT
 );
 
--- parsed codes to be targeted to table cdm_measurement
+-- -------------------------------------------------------------------
+-- Create src_waveform_mx table
+-- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_waveform_mx
+DROP TABLE IF EXISTS src_waveform_mx;
+CREATE TABLE src_waveform_mx
 (
-    case_id                 INT64,  -- FK to the header
-    segment_name            STRING, -- two digits of case_id, 5 digits of internal sequence number
-    subject_id              INT64,  -- patient's id
-    reference_id            STRING, -- file name without extension
-    mx_datetime             DATETIME, -- time of measurement
-    source_code             STRING,   -- type of measurement
-    value_as_number         FLOAT64,
-    unit_source_value       STRING, -- measurement unit "BPM", "MS", "UV" (microvolt) etc.
-                                    -- map these labels and populate unit_concept_id
-    --
-    load_table_id           STRING,
-    load_row_id             INT64,
-    trace_id                STRING
+    case_id                 BIGINT,  -- FK to the header
+    segment_name            TEXT,    -- two digits of case_id, 5 digits of internal sequence number
+    subject_id              BIGINT,  -- patient's id
+    reference_id            TEXT,    -- file name without extension
+    mx_datetime             TIMESTAMP, -- time of measurement
+    source_code             TEXT,      -- type of measurement
+    value_as_number         DOUBLE PRECISION,
+    unit_source_value       TEXT, -- measurement unit "BPM", "MS", "UV" (microvolt) etc.
+    load_table_id           TEXT,
+    load_row_id             BIGINT,
+    trace_id                TEXT
 );
 
-
--- parse xml from Manlik? -> src_waveform
--- src_waveform -> visit_detail (visit_detail_source_value = <reference ID>)
-
--- finding the visit 
--- create visit_detail
--- create measurement -> link visit_detail using visit_detail_source_value = meas_source_value 
--- (start with Manlik's proposal)
-
-
 -- -------------------------------------------------------------------
--- insert sample data
+-- Insert sample data into src_waveform_header
 -- -------------------------------------------------------------------
 
-
-INSERT INTO `@etl_project`.@etl_dataset.src_waveform_header
+INSERT INTO src_waveform_header
 SELECT
     subj.short_reference_id             AS reference_id,
     subj.long_reference_id              AS raw_files_path,
     subj.case_id                        AS case_id,
     subj.subject_id                     AS subject_id,
-    CAST(src.start_datetime AS DATETIME)    AS start_datetime,
-    CAST(src.end_datetime AS DATETIME)      AS end_datetime,
-    --
+    CAST(src.start_datetime AS TIMESTAMP) AS start_datetime,
+    CAST(src.end_datetime AS TIMESTAMP)   AS end_datetime,
     'wf_header'                         AS load_table_id,
     0                                   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subj.subject_id AS subject_id,
-        subj.short_reference_id AS reference_id
-    ))                                  AS trace_id
+    json_build_object(
+        'subject_id', subj.subject_id,
+        'reference_id', subj.short_reference_id
+    )::TEXT                             AS trace_id
 FROM
-    `@wf_project`.@wf_dataset.wf_header subj
+    wf_header subj
 INNER JOIN
     (
         SELECT 
             case_id, 
             MIN(date_time) AS start_datetime,
             MAX(date_time) AS end_datetime 
-        FROM `@wf_project`.@wf_dataset.wf_details
+        FROM wf_details
         GROUP BY case_id
     ) src
-        ON src.case_id = subj.case_id
-;
+        ON src.case_id = subj.case_id;
 
+-- -------------------------------------------------------------------
+-- Insert sample data into src_waveform_mx
+-- -------------------------------------------------------------------
 
-INSERT INTO `@etl_project`.@etl_dataset.src_waveform_mx
+INSERT INTO src_waveform_mx
 SELECT
     src.case_id                         AS case_id, -- FK to the header
-    CAST(src.segment_name AS STRING)    AS segment_name,
+    CAST(src.segment_name AS TEXT)      AS segment_name,
     subj.subject_id                     AS subject_id,
     subj.short_reference_id             AS reference_id,
-    CAST(src.date_time AS DATETIME)     AS mx_datetime,
+    CAST(src.date_time AS TIMESTAMP)    AS mx_datetime,
     src.src_name                        AS source_code,
-    CAST(src.value AS FLOAT64)          AS value_as_number,
+    CAST(src.value AS DOUBLE PRECISION) AS value_as_number,
     unit_concept_name                   AS unit_source_value,
-    --
-    'wf_details' load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-            src.case_id AS case_id,
-            CAST(src.date_time AS STRING) AS date_time,
-            src.src_name AS src_name
-        )) AS trace_id -- 
+    'wf_details'                        AS load_table_id,
+    md5(random()::text || clock_timestamp()::text) AS load_row_id, -- Generate UUID-like value
+    json_build_object(
+        'case_id', src.case_id,
+        'date_time', src.date_time::TEXT,
+        'src_name', src.src_name
+    )::TEXT                             AS trace_id
 FROM
-    `@wf_project`.@wf_dataset.wf_details src
+    wf_details src
 INNER JOIN
-    `@wf_project`.@wf_dataset.wf_header subj
-        ON src.case_id = subj.case_id
-;
+    wf_header subj
+        ON src.case_id = subj.case_id;
+

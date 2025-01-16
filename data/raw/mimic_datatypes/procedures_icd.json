@@ -1,0 +1,8 @@
+{
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "seq_num": "INTEGER",
+    "chartdate": "TEXT",
+    "icd_code": "TEXT",
+    "icd_version": "INTEGER"
+}

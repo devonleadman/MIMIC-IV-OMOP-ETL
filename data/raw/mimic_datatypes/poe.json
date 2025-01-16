@@ -1,0 +1,14 @@
+{
+    "poe_id": "TEXT",
+    "poe_seq": "INTEGER",
+    "subject_id": "INTEGER",
+    "hadm_id": "INTEGER",
+    "ordertime": "TEXT",
+    "order_type": "TEXT",
+    "order_subtype": "TEXT",
+    "transaction_type": "TEXT",
+    "discontinue_of_poe_id": "DOUBLE PRECISION",
+    "discontinued_by_poe_id": "DOUBLE PRECISION",
+    "order_provider_id": "TEXT",
+    "order_status": "TEXT"
+}

@@ -34,167 +34,151 @@
 -- src_waveform_header
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_waveform_header_3
+-- -------------------------------------------------------------------
+-- Create src_waveform_header_3 table
+-- -------------------------------------------------------------------
+
+DROP TABLE IF EXISTS src_waveform_header_3;
+CREATE TABLE src_waveform_header_3
 (       
-    reference_id            STRING,
-    raw_files_path          STRING,
-    case_id                 STRING,
-    subject_id              INT64,
-    start_datetime          DATETIME,
-    end_datetime            DATETIME,
-    --
-    load_table_id           STRING,
-    load_row_id             INT64,
-    trace_id                STRING
+    reference_id            TEXT,
+    raw_files_path          TEXT,
+    case_id                 TEXT,
+    subject_id              BIGINT,
+    start_datetime          TIMESTAMP,
+    end_datetime            TIMESTAMP,
+    load_table_id           TEXT,
+    load_row_id             BIGINT,
+    trace_id                TEXT
 );
 
--- parsed codes to be targeted to table cdm_measurement
+-- -------------------------------------------------------------------
+-- Create src_waveform_mx_3 table
+-- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE `@etl_project`.@etl_dataset.src_waveform_mx_3
+DROP TABLE IF EXISTS src_waveform_mx_3;
+CREATE TABLE src_waveform_mx_3
 (
-    case_id                 STRING,  -- FK to the header
-    segment_name            STRING, -- two digits of case_id, 5 digits of internal sequence number
-    mx_datetime             DATETIME, -- time of measurement
-    source_code             STRING,   -- type of measurement
-    value_as_number         FLOAT64,
-    unit_source_value       STRING, -- measurement unit "BPM", "MS", "UV" (microvolt) etc.
-                                    -- map these labels and populate unit_concept_id
-    --
-    Visit_Detail___Source               STRING,
-    Visit_Detail___Start_from_minutes   INT64,
-    Visit_Detail___Report_minutes       INT64,
-    Visit_Detail___Sumarize_minutes     INT64,
-    Visit_Detail___Method               STRING,
-    --
-    load_table_id           STRING,
-    load_row_id             INT64,
-    trace_id                STRING
+    case_id                 TEXT,  -- FK to the header
+    segment_name            TEXT,  -- two digits of case_id, 5 digits of internal sequence number
+    mx_datetime             TIMESTAMP, -- time of measurement
+    source_code             TEXT,      -- type of measurement
+    value_as_number         DOUBLE PRECISION,
+    unit_source_value       TEXT,      -- measurement unit
+    Visit_Detail___Source               TEXT,
+    Visit_Detail___Start_from_minutes   BIGINT,
+    Visit_Detail___Report_minutes       BIGINT,
+    Visit_Detail___Sumarize_minutes     BIGINT,
+    Visit_Detail___Method               TEXT,
+    load_table_id           TEXT,
+    load_row_id             BIGINT,
+    trace_id                TEXT
 );
 
-
--- parse xml from Manlik? -> src_waveform
--- src_waveform -> visit_detail (visit_detail_source_value = <reference ID>)
-
--- finding the visit 
--- create visit_detail
--- create measurement -> link visit_detail using visit_detail_source_value = meas_source_value 
--- (start with Manlik's proposal)
-
-
 -- -------------------------------------------------------------------
--- insert sample data
+-- Insert sample data into src_waveform_header_3
 -- -------------------------------------------------------------------
 
-
-INSERT INTO `@etl_project`.@etl_dataset.src_waveform_header_3
+INSERT INTO src_waveform_header_3
 SELECT
     subj.short_reference_id             AS reference_id,
     subj.long_reference_id              AS raw_files_path,
-    subj.case_id                                        AS case_id, -- string
-    CAST(REPLACE(subj.case_id, 'p', '') AS INT64)       AS subject_id, -- int
-    CAST(subj.start_datetime AS DATETIME)               AS start_datetime,
-    CAST(subj.end_datetime AS DATETIME)                 AS end_datetime,
-    --
+    subj.case_id                        AS case_id,
+    CAST(REPLACE(subj.case_id, 'p', '') AS BIGINT) AS subject_id,
+    subj.start_datetime::TIMESTAMP      AS start_datetime,
+    subj.end_datetime::TIMESTAMP        AS end_datetime,
     'poc_3_header'                      AS load_table_id,
     0                                   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-        subj.case_id AS case_id,
-        subj.short_reference_id AS reference_id
-    ))                                  AS trace_id
+    json_build_object(
+        'case_id', subj.case_id,
+        'reference_id', subj.short_reference_id
+    )::TEXT                             AS trace_id
 FROM
-    `@wf_project`.@wf_dataset.poc_3_header subj
-;
+    poc_3_header subj;
 
--- Chunk 1
--- 25-second interval, mass data
+-- -------------------------------------------------------------------
+-- Chunk 1: Insert sample data into src_waveform_mx_3
+-- -------------------------------------------------------------------
 
-INSERT INTO `@etl_project`.@etl_dataset.src_waveform_mx_3
+INSERT INTO src_waveform_mx_3
 SELECT
     src.case_id                         AS case_id, -- FK to the header
     src.segment_name                    AS segment_name,
-    --
-    CAST(src.date_time AS DATETIME)     AS mx_datetime,
+    src.date_time::TIMESTAMP            AS mx_datetime,
     src.src_name                        AS source_code,
-    CAST(src.value AS FLOAT64)          AS value_as_number,
+    src.value::DOUBLE PRECISION         AS value_as_number,
     src.unit_concept_name               AS unit_source_value,
     'csv'                               AS Visit_Detail___Source,
-    CAST(NULL AS INT64)                 AS Visit_Detail___Start_from_minutes,
-    CAST(NULL AS INT64)                 AS Visit_Detail___Report_minutes,
-    CAST(NULL AS INT64)                 AS Visit_Detail___Sumarize_minutes,
+    NULL                                AS Visit_Detail___Start_from_minutes,
+    NULL                                AS Visit_Detail___Report_minutes,
+    NULL                                AS Visit_Detail___Sumarize_minutes,
     'NONE'                              AS Visit_Detail___Method,
-    --
     'poc_3_chunk_1'                     AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-            src.case_id AS case_id,
-            CAST(src.date_time AS STRING) AS date_time,
-            src.src_name AS src_name
-        )) AS trace_id -- 
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'case_id', src.case_id,
+        'date_time', src.date_time::TEXT,
+        'src_name', src.src_name
+    )::TEXT                             AS trace_id
 FROM
-    `@wf_project`.@wf_dataset.poc_3_chunk_1 src
+    poc_3_chunk_1 src
 INNER JOIN
-    `@etl_project`.@etl_dataset.src_patients pat
-        ON  CAST(REPLACE(src.case_id, 'p', '') AS INT64) = pat.subject_id    -- filter out mass data in demo dataset
-;
+    src_patients pat
+        ON CAST(REPLACE(src.case_id, 'p', '') AS BIGINT) = pat.subject_id;
 
+-- -------------------------------------------------------------------
+-- Chunk 2: Insert summarized data for Full set and Demo into src_waveform_mx_3
+-- -------------------------------------------------------------------
 
--- Chunk 2
--- 5-minute interval, summarized data for Full set and Demo
-
-INSERT INTO `@etl_project`.@etl_dataset.src_waveform_mx_3
+INSERT INTO src_waveform_mx_3
 SELECT
     src.case_id                         AS case_id, -- FK to the header
     src.segment_name                    AS segment_name,
-    --
-    CAST(src.date_time AS DATETIME)     AS mx_datetime,
+    src.date_time::TIMESTAMP            AS mx_datetime,
     src.src_name                        AS source_code,
-    CAST(src.value AS FLOAT64)          AS value_as_number,
+    src.value::DOUBLE PRECISION         AS value_as_number,
     src.unit_concept_name               AS unit_source_value,
-    Visit_Detail___Source               AS Visit_Detail___Source,
-    Visit_Detail___Start_from_minutes   AS Visit_Detail___Start_from_minutes,
-    Visit_Detail___Report_minutes       AS Visit_Detail___Report_minutes,
-    Visit_Detail___Sumarize_minutes     AS Visit_Detail___Sumarize_minutes,
-    Visit_Detail___Method               AS Visit_Detail___Method,
-    --
+    src.Visit_Detail___Source           AS Visit_Detail___Source,
+    src.Visit_Detail___Start_from_minutes AS Visit_Detail___Start_from_minutes,
+    src.Visit_Detail___Report_minutes   AS Visit_Detail___Report_minutes,
+    src.Visit_Detail___Sumarize_minutes AS Visit_Detail___Sumarize_minutes,
+    src.Visit_Detail___Method           AS Visit_Detail___Method,
     'poc_3_chunk_2'                     AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-            src.case_id AS case_id,
-            CAST(src.date_time AS STRING) AS date_time,
-            src.src_name AS src_name
-        )) AS trace_id -- 
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'case_id', src.case_id,
+        'date_time', src.date_time::TEXT,
+        'src_name', src.src_name
+    )::TEXT                             AS trace_id
 FROM
-    `@wf_project`.@wf_dataset.poc_3_chunk_2 src
-;
+    poc_3_chunk_2 src;
 
+-- -------------------------------------------------------------------
+-- Chunk 3: Insert tiny mass data for Demo into src_waveform_mx_3
+-- -------------------------------------------------------------------
 
--- Chunk 3
--- 25-second interval, tiny mass data for Demo
-
-INSERT INTO `@etl_project`.@etl_dataset.src_waveform_mx_3
+INSERT INTO src_waveform_mx_3
 SELECT
     src.case_id                         AS case_id, -- FK to the header
     src.segment_name                    AS segment_name,
-    --
-    CAST(src.date_time AS DATETIME)     AS mx_datetime,
+    src.date_time::TIMESTAMP            AS mx_datetime,
     src.src_name                        AS source_code,
-    CAST(src.value AS FLOAT64)          AS value_as_number,
+    src.value::DOUBLE PRECISION         AS value_as_number,
     src.unit_concept_name               AS unit_source_value,
-    Visit_Detail___Source               AS Visit_Detail___Source,
-    Visit_Detail___Start_from_minutes   AS Visit_Detail___Start_from_minutes,
-    Visit_Detail___Report_minutes       AS Visit_Detail___Report_minutes,
-    Visit_Detail___Sumarize_minutes     AS Visit_Detail___Sumarize_minutes,
-    Visit_Detail___Method               AS Visit_Detail___Method,
-    --
+    src.Visit_Detail___Source           AS Visit_Detail___Source,
+    src.Visit_Detail___Start_from_minutes AS Visit_Detail___Start_from_minutes,
+    src.Visit_Detail___Report_minutes   AS Visit_Detail___Report_minutes,
+    src.Visit_Detail___Sumarize_minutes AS Visit_Detail___Sumarize_minutes,
+    src.Visit_Detail___Method           AS Visit_Detail___Method,
     'poc_3_chunk_3'                     AS load_table_id,
-    FARM_FINGERPRINT(GENERATE_UUID())   AS load_row_id,
-    TO_JSON_STRING(STRUCT(
-            src.case_id AS case_id,
-            CAST(src.date_time AS STRING) AS date_time,
-            src.src_name AS src_name
-        )) AS trace_id -- 
+    md5(random()::text || clock_timestamp()::text) AS load_row_id,
+    json_build_object(
+        'case_id', src.case_id,
+        'date_time', src.date_time::TEXT,
+        'src_name', src.src_name
+    )::TEXT                             AS trace_id
 FROM
-    `@wf_project`.@wf_dataset.poc_3_chunk_3 src
-;
+    poc_3_chunk_3 src;
+
 
 
