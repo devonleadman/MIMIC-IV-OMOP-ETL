@@ -67,13 +67,13 @@ def start ():
     
     else:
         setup_postgre_all() # works
-        #start_vocabulary_refresh() # works
+        start_vocabulary_refresh() # works
         start_mimic_population() # works
 
         workflow_runner = WorkflowRunner()
 
         workflow_runner.run_workflow(workflow='ddl') # works
-        workflow_runner.run_workflow(workflow='staging')
+        workflow_runner.run_workflow(workflow='staging') # works
         workflow_runner.run_workflow(workflow='etl')
         workflow_runner.run_workflow(workflow='ut')
         workflow_runner.run_workflow(workflow='metrics')
