@@ -39,7 +39,7 @@ SELECT DISTINCT
         PARTITION BY src.subject_id 
         ORDER BY src.admittime ASC
     )                                   AS load_row_id,
-    FIRST_VALUE(src.trace_id) OVER (
+    FIRST_VALUE(src.trace_id::TEXT) OVER (
         PARTITION BY src.subject_id 
         ORDER BY src.admittime ASC
     )                                   AS trace_id
@@ -64,7 +64,7 @@ CREATE TABLE cdm_death
     cause_source_concept_id BIGINT              ,
     unit_id                 TEXT,
     load_table_id           TEXT,
-    load_row_id             BIGINT,
+    load_row_id             TEXT,
     trace_id                TEXT
 );
 

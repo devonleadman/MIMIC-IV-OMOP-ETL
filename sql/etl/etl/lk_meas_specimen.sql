@@ -41,8 +41,8 @@
 DROP TABLE IF EXISTS lk_micro_cross_ref;
 CREATE TABLE lk_micro_cross_ref AS
 SELECT
-    trace_id                                    AS trace_id_ab, -- for antibiotics
-    FIRST_VALUE(src.trace_id) OVER (
+    trace_id::TEXT                           AS trace_id_ab, -- Cast to TEXT for antibiotics
+    FIRST_VALUE(src.trace_id::TEXT) OVER (
         PARTITION BY
             src.subject_id,
             src.hadm_id,
@@ -50,19 +50,19 @@ SELECT
             src.spec_itemid,
             src.test_itemid,
             src.org_itemid
-        ORDER BY src.trace_id
-    )                                           AS trace_id_org, -- for test-organism pairs
-    FIRST_VALUE(src.trace_id) OVER (
+        ORDER BY src.trace_id::TEXT
+    )                                       AS trace_id_org, -- Cast to TEXT for test-organism pairs
+    FIRST_VALUE(src.trace_id::TEXT) OVER (
         PARTITION BY
             src.subject_id,
             src.hadm_id,
             COALESCE(src.charttime, src.chartdate),
             src.spec_itemid
-        ORDER BY src.trace_id
-    )                                           AS trace_id_spec, -- for specimen
-    subject_id                                  AS subject_id,    -- Subject ID
-    hadm_id                                     AS hadm_id,       -- Hospital admission ID
-    COALESCE(src.charttime, src.chartdate)      AS start_datetime -- Event timestamp
+        ORDER BY src.trace_id::TEXT
+    )                                       AS trace_id_spec, -- Cast to TEXT for specimen
+    subject_id                              AS subject_id,    -- Subject ID
+    hadm_id                                 AS hadm_id,       -- Hospital admission ID
+    COALESCE(src.charttime, src.chartdate)  AS start_datetime -- Event timestamp
 FROM
     src_microbiologyevents src;
 
@@ -74,18 +74,18 @@ FROM
 DROP TABLE IF EXISTS lk_micro_hadm_id;
 CREATE TABLE lk_micro_hadm_id AS
 SELECT
-    src.trace_id_ab                     AS event_trace_id,
-    adm.hadm_id                         AS hadm_id,
+    src.trace_id_ab::TEXT             AS event_trace_id, -- Cast to TEXT for event trace ID
+    adm.hadm_id                       AS hadm_id,
     ROW_NUMBER() OVER (
-        PARTITION BY src.trace_id_ab
+        PARTITION BY src.trace_id_ab::TEXT
         ORDER BY adm.start_datetime
-    )                                   AS row_num -- Pick the earliest admission
+    )                                 AS row_num -- Pick the earliest admission
 FROM  
     lk_micro_cross_ref src
 INNER JOIN 
     lk_admissions_clean adm
         ON adm.subject_id = src.subject_id
-        AND src.start_datetime BETWEEN adm.start_datetime AND adm.end_datetime
+        AND src.start_datetime::TIMESTAMP BETWEEN adm.start_datetime AND adm.end_datetime
 WHERE
     src.hadm_id IS NULL;
 
@@ -103,16 +103,16 @@ SELECT DISTINCT
     src.spec_itemid                             AS spec_itemid, -- Specimen type
     src.test_itemid                             AS test_itemid, -- Test type
     src.org_itemid                              AS org_itemid,  -- Organism grown
-    cr.trace_id_spec                            AS trace_id_spec,
+    cr.trace_id_spec::TEXT                      AS trace_id_spec, -- Cast to TEXT
     'micro.organism'                            AS unit_id,
     src.load_table_id                           AS load_table_id,
     0                                           AS load_row_id,
-    cr.trace_id_org                             AS trace_id
+    cr.trace_id_org::TEXT                       AS trace_id -- Cast to TEXT
 FROM
     src_microbiologyevents src
 INNER JOIN
     lk_micro_cross_ref cr
-        ON src.trace_id = cr.trace_id_org;
+        ON src.trace_id::TEXT = cr.trace_id_org::TEXT; -- Cast to TEXT
 
 -- -------------------------------------------------------------------
 -- lk_specimen_clean
@@ -160,7 +160,7 @@ FROM
     src_microbiologyevents src
 INNER JOIN
     lk_micro_cross_ref cr
-        ON src.trace_id = cr.trace_id_ab
+        ON src.trace_id::TEXT = cr.trace_id_ab
 WHERE
     src.ab_itemid IS NOT NULL;
 
@@ -169,6 +169,10 @@ WHERE
 -- Prepares microbiology items and resistance codes
 -- -------------------------------------------------------------------
 
+----------------------------------------------------------------------------
+-- COMMENTED OUT FOR NOW SO I CAN RUN EVERYTHING ELSE, NEED TO COME BACK TO FIX
+
+/*
 DROP TABLE IF EXISTS lk_d_micro_clean;
 CREATE TABLE lk_d_micro_clean AS
 SELECT
@@ -189,10 +193,15 @@ FROM
 WHERE
     src.interpretation IS NOT NULL;
 
+----------------------------------------------------------------------------
+
 -- -------------------------------------------------------------------
 -- lk_specimen_mapped
 -- Maps specimens to target concepts
 -- -------------------------------------------------------------------
+
+----------------------------------------------------------------------------
+-- COMMENTED OUT FOR NOW SO I CAN RUN EVERYTHING ELSE, NEED TO COME BACK TO FIX
 
 DROP TABLE IF EXISTS lk_specimen_mapped;
 CREATE TABLE lk_specimen_mapped AS
@@ -216,18 +225,22 @@ SELECT
 FROM
     lk_specimen_clean src
 INNER JOIN
-    lk_d_micro_concept mc
+    microbiologyevents mc
         ON src.spec_itemid = mc.itemid
 LEFT JOIN
     lk_micro_hadm_id hadm
         ON hadm.event_trace_id = src.trace_id
         AND hadm.row_num = 1;
 
+----------------------------------------------------------------------------
+
 -- -------------------------------------------------------------------
 -- lk_meas_organism_mapped
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE lk_meas_organism_mapped AS
+-- COMMENTED OUT FOR NOW SO I CAN RUN EVERYTHING ELSE, NEED TO COME BACK TO FIX
+DROP TABLE IF EXISTS lk_meas_organism_mapped;
+CREATE TABLE lk_meas_organism_mapped AS
 SELECT
     md5(gen_random_uuid()::text)                       AS measurement_id,
     src.subject_id                                     AS subject_id,
@@ -255,13 +268,13 @@ SELECT
 FROM
     lk_meas_organism_clean src
 INNER JOIN
-    lk_d_micro_concept tc
+    microbiologyevents tc
         ON src.test_itemid = tc.itemid
 INNER JOIN
-    lk_d_micro_concept sc
+    microbiologyevents sc
         ON src.spec_itemid = sc.itemid
 LEFT JOIN
-    lk_d_micro_concept oc
+    microbiologyevents oc
         ON src.org_itemid = oc.itemid
 LEFT JOIN
     lk_micro_hadm_id hadm
@@ -272,7 +285,9 @@ LEFT JOIN
 -- lk_meas_ab_mapped
 -- -------------------------------------------------------------------
 
-CREATE OR REPLACE TABLE lk_meas_ab_mapped AS
+-- COMMENTED OUT FOR NOW SO I CAN RUN EVERYTHING ELSE, NEED TO COME BACK TO FIX
+DROP TABLE IF EXISTS lk_meas_ab_mapped;
+CREATE TABLE lk_meas_ab_mapped AS
 SELECT
     md5(gen_random_uuid()::text)                       AS measurement_id,
     src.subject_id                                     AS subject_id,
@@ -300,10 +315,10 @@ SELECT
 FROM
     lk_meas_ab_clean src
 INNER JOIN
-    lk_d_micro_concept ac
+    microbiologyevents ac
         ON src.ab_itemid = ac.itemid
 LEFT JOIN
-    lk_d_micro_concept rc
+    microbiologyevents rc
         ON src.interpretation = rc.source_code
         AND rc.source_vocabulary_id = 'mimiciv_micro_resistance' -- new vocab
 LEFT JOIN

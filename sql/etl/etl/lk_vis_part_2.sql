@@ -105,7 +105,7 @@ SELECT
 FROM 
     lk_services_clean src
 WHERE
-    src.prev_service = src.lag_service;
+    src.prev_service::TEXT = src.lag_service;
 
 -- Rule 4: Waveforms
 INSERT INTO lk_visit_detail_clean

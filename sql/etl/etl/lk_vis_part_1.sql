@@ -77,7 +77,7 @@ FROM
 LEFT JOIN
     lk_admissions_clean vis
         ON vis.subject_id = src.subject_id
-        AND src.intime BETWEEN vis.start_datetime AND vis.end_datetime
+        AND src.intime::TIMESTAMP BETWEEN vis.start_datetime AND vis.end_datetime
         AND src.hadm_id IS NULL
 WHERE 
     src.eventtype != 'discharge'; -- these are not useful
@@ -89,11 +89,11 @@ WHERE
 DROP TABLE IF EXISTS lk_services_duplicated;
 CREATE TABLE lk_services_duplicated AS
 SELECT
-    trace_id, COUNT(*) AS row_count
+    src.trace_id::TEXT, COUNT(*) AS row_count
 FROM 
     src_services src
 GROUP BY
-    src.trace_id
+    src.trace_id::TEXT
 HAVING COUNT(*) > 1;
 
 -- -------------------------------------------------------------------
@@ -124,7 +124,7 @@ FROM
     src_services src
 LEFT JOIN
     lk_services_duplicated sd
-        ON src.trace_id = sd.trace_id
+        ON src.trace_id::TEXT = sd.trace_id
 WHERE
     sd.trace_id IS NULL; -- remove duplicates with the exact same time of transferring
 

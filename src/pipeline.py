@@ -67,8 +67,8 @@ def start ():
     
     else:
         setup_postgre_all() # works
-        start_vocabulary_refresh() # works
-        start_mimic_population() # works
+        #start_vocabulary_refresh() # works
+        #start_mimic_population() # works
 
         workflow_runner = WorkflowRunner()
 

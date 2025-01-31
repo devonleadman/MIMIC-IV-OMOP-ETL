@@ -50,12 +50,12 @@ SELECT
     src.charttime                   AS start_datetime,
     TRIM(src.value)                 AS value,
     CASE 
-        WHEN REGEXP_MATCHES(TRIM(src.value), '^[-]?\\d+[.]?\\d*[ ]*[a-z]+$') 
+        WHEN TRIM(src.value) ~ '^[-]?\\d+[.]?\\d*[ ]*[a-z]+$'  -- Use `~` for regex match as BOOLEAN
         THEN CAST(REGEXP_REPLACE(src.value, '[^\\d.-]', '', 'g') AS DOUBLE PRECISION)
         ELSE src.valuenum
     END                             AS valuenum,
     CASE
-        WHEN REGEXP_MATCHES(TRIM(src.value), '^[-]?\\d+[.]?\\d*[ ]*[a-z]+$') 
+        WHEN TRIM(src.value) ~ '^[-]?\\d+[.]?\\d*[ ]*[a-z]+$'  -- Use `~` for regex match as BOOLEAN
         THEN REGEXP_REPLACE(src.value, '[^a-z]', '', 'g')
         ELSE src.valueuom
     END                             AS valueuom,
@@ -106,7 +106,7 @@ SELECT
 FROM
     lk_chartevents_clean
 GROUP BY
-    source_code, source_label;
+    value; -- Include value in GROUP BY
 
 -- -------------------------------------------------------------------
 -- lk_chartevents_concept
@@ -151,7 +151,7 @@ DROP TABLE IF EXISTS tmp_chartevents_code_dist;
 DROP TABLE IF EXISTS lk_chartevents_mapped;
 CREATE TABLE lk_chartevents_mapped AS
 SELECT
-    FARM_FINGERPRINT(GENERATE_UUID())           AS measurement_id,
+    md5(gen_random_uuid()::TEXT)  AS measurement_id, -- Use gen_random_uuid()
     src.subject_id                              AS subject_id,
     src.hadm_id                                 AS hadm_id,
     src.stay_id                                 AS stay_id,

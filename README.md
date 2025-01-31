@@ -13,7 +13,9 @@ This adaptation of the MIMIC repository utilizes a local PostgreSQL database whi
 
 ## DEVELOPMENT NOTES
 - As of right now in development, the full pipeline is not converted to use PostgreSQL. The pipeline consists of 6 main steps (ddl,staging,etl,ut,metrics,unload)
-- the ddl and staging has been converted and im working through converting the etl step, which is the longest and most complex step. Ive converted and verified that the etl step works up to the population of cdm_caresite.sql
+- the ddl and staging has been converted and im working through converting the etl step, which is the longest and most complex step. Ive converted and verified that the etl step works up to the population of cdm_labevents.sql
+- Table lk_d_micro_clean in lk_meas_specimen.sql cannot be generated because table src_d_micro does not exist. From what I can gather its because MIMIC no longer gives out a table named d_micro - i got word that the information should be in the microbiologyevents CSV but the data doesnt line up
+- lk_meas_specimen.sql: I had to comment out the last several tables due to missing tables to continue testing the other tables in the pipeline. These need looked at more eventually
 
 ## IMPROVEMENT NOTES
 - To ensure reproducibility, containing this code within a Docker container would be a good first improvement. This would also allow for the automation of setting up steps 1-3 in the BEFORE YOU BEGIN section of the README.md

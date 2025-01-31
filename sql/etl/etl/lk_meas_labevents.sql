@@ -71,14 +71,14 @@ FROM
 DROP TABLE IF EXISTS lk_meas_labevents_clean;
 CREATE TABLE lk_meas_labevents_clean AS
 SELECT
-    FARM_FINGERPRINT(GENERATE_UUID())       AS measurement_id, -- Generate unique measurement ID
+    md5(gen_random_uuid()::TEXT)       AS measurement_id, -- Generate unique measurement ID
     src.subject_id                          AS subject_id,
     src.charttime                           AS start_datetime, -- Measurement timestamp
     src.hadm_id                             AS hadm_id,
     src.itemid                              AS itemid,
     src.value                               AS value, -- Source value
-    REGEXP_REPLACE(src.value, r'^(\<=|\>=|\>|\<|=|).*', '\1')   AS value_operator, -- Extract operator
-    REGEXP_REPLACE(src.value, r'[^0-9.-]', '', 'g')             AS value_number, -- Extract numeric value
+    REGEXP_REPLACE(src.value, '^(\<=|\>=|\>|\<|=|).*', '\1')   AS value_operator, -- Extract operator
+    REGEXP_REPLACE(src.value, '[^0-9.-]', '', 'g')             AS value_number, -- Extract numeric value
     NULLIF(TRIM(src.valueuom), '')          AS valueuom, -- Unit of measurement
     src.ref_range_lower                     AS ref_range_lower,
     src.ref_range_upper                     AS ref_range_upper,
@@ -143,7 +143,7 @@ SELECT
     src.trace_id                        AS event_trace_id, 
     adm.hadm_id                         AS hadm_id,
     ROW_NUMBER() OVER (
-        PARTITION BY src.trace_id
+        PARTITION BY src.trace_id::TEXT
         ORDER BY adm.start_datetime
     )                                   AS row_num -- Select the earliest hadm_id
 FROM  
@@ -151,7 +151,7 @@ FROM
 INNER JOIN 
     lk_admissions_clean adm
         ON adm.subject_id = src.subject_id
-        AND src.start_datetime BETWEEN adm.start_datetime AND adm.end_datetime
+        AND src.start_datetime::TIMESTAMP BETWEEN adm.start_datetime AND adm.end_datetime
 WHERE
     src.hadm_id IS NULL;
 
@@ -201,6 +201,5 @@ LEFT JOIN
         ON uc.source_code = src.valueuom
 LEFT JOIN 
     lk_meas_labevents_hadm_id hadm
-        ON hadm.event_trace_id = src.trace_id
+        ON hadm.event_trace_id::TEXT = src.trace_id::TEXT -- Cast to TEXT for comparison
         AND hadm.row_num = 1;
-

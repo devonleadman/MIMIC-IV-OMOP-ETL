@@ -98,7 +98,7 @@ CREATE TABLE cdm_person
     ethnicity_source_concept_id BIGINT             ,
     unit_id                     TEXT,
     load_table_id               TEXT,
-    load_row_id                 BIGINT,
+    load_row_id                 TEXT,
     trace_id                    TEXT
 );
 
@@ -160,7 +160,7 @@ SELECT
         END, 0)                     AS ethnicity_source_concept_id,
     'person.patients'               AS unit_id,
     p.load_table_id::TEXT         AS load_table_id,
-    p.load_row_id::TEXT             AS load_row_id,
+    p.load_row_id::TEXT            AS load_row_id,
     p.trace_id                      AS trace_id
 FROM 
     src_patients p
